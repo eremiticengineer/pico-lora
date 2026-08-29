@@ -7,23 +7,35 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "semphr.h"
+
+#include "SX1278.hpp"
 
 #define LORA_SEND_TASK_PRIORITY (tskIDLE_PRIORITY + 2UL)
 
-SemaphoreHandle_t uart_mutex;
-
 namespace lora_config {
-    inline constexpr uint TX = 4;
-    inline constexpr uint RX = 5;
+    inline spi_inst_t* SPI = spi0;
+    inline constexpr uint SCK   = 18;
+    inline constexpr uint MOSI  = 19;
+    inline constexpr uint MISO  = 16;
+    inline constexpr uint CS    = 17;
+    inline constexpr uint RESET = 20;
 }
 
-void lora_send_task(void *params) {
-    LoRa *pLora = static_cast<LoRa *>(pvParameters);
+void lora_send_task(void* params) {
+    SX1278 *pLora = static_cast<SX1278 *>(params);
 
-    std::string commsString = "comms data from pico";
+    uint32_t counter = 0;
+
     while (true) {
-        pLora->send_lora_packet((unsigned char*)message, strlen(message), 0);
+        std::string message = "Hello from Pico: " + std::to_string(counter++);
+
+        if (pLora->send(message)) {
+            printf("LoRa TX: %s\n", message.c_str());
+        }
+        else {
+            printf("LoRa TX failed\n");
+        }
+
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
@@ -32,12 +44,23 @@ int main( void )
 {
     stdio_init_all();
 
-    LoRa lora;
-    lora.init(433, 10, "CODEBRANE");
+    SX1278 lora(
+        lora_config::SPI,
+        lora_config::CS,
+        lora_config::RESET,
+        lora_config::SCK,
+        lora_config::MOSI,
+        lora_config::MISO
+    );
 
-    xTaskCreate(lora_send_task, "LoRaSendTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
-
-    vTaskStartScheduler();
+    if (lora.init(433000000)) {
+        printf("SX1278 detected, version: 0x%02X\n", lora.getVersion());
+        xTaskCreate(lora_send_task, "LoRaSendTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
+        vTaskStartScheduler();
+    }
+    else {
+        printf("SX1278 not detected\n");
+    }    
 
     return 0;
 }

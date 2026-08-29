@@ -26,14 +26,16 @@ include(
 )
 
 # ---------------------------------------------------------
-# UART sender
+# LoRa sender
 # ---------------------------------------------------------
 add_executable(${PROJECT_SENDER}
   src/pico-lora-test-sender.cpp
+  src/SX1278/SX1278.cpp
 )
 
 target_include_directories(${PROJECT_SENDER} PUBLIC
   include/
+  src/SX1278
 )
 
 target_link_libraries(${PROJECT_SENDER}
@@ -47,14 +49,16 @@ pico_enable_stdio_uart(${PROJECT_SENDER} 0)
 pico_add_extra_outputs(${PROJECT_SENDER})
 
 # ---------------------------------------------------------
-# UART receiver
+# LoRa receiver
 # ---------------------------------------------------------
 add_executable(${PROJECT_RECEIVER}
   src/pico-lora-test-receiver.cpp
+  src/SX1278/SX1278.cpp
 )
 
 target_include_directories(${PROJECT_RECEIVER} PUBLIC
   include/
+  src/SX1278
 )
 
 target_link_libraries(${PROJECT_RECEIVER}

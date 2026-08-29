@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "hardware/spi.h"
 
 typedef enum {fmIdle, fmLaunched, fmDescending, fmLanding, fmLanded} TFlightMode;
 struct TGPS
@@ -128,10 +129,17 @@ struct TGPS
 
 class LoRa {
 public:
-    LoRa();
+    LoRa(spi_inst_t* spi,
+		uint8_t pin_mosi,
+		uint8_t pin_miso,
+		uint8_t pin_sck,
+		uint8_t pin_css,
+		uint8_t pin_di0);
     void init(float frequency, int mode, char *callsign);
     void check_lora(struct TGPS *gps);
     void send_lora_packet(unsigned char *buffer, int length, int calling_packet);
+
+	uint8_t _pin_mosi, _pin_miso, _pin_sck, _pin_cs, _pin_di0;
 
 private:
 };

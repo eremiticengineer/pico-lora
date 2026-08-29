@@ -36,7 +36,6 @@ adjust to suit. Wire thus:
 | GP18 | SCK    |
 | GP17 | NSS    |
 
-
 ## Setting up the sender and receiver
 
 First build both the sender and receiver:

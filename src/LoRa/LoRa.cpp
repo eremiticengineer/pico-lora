@@ -4,17 +4,7 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
-#include "hardware/spi.h"
 
-using namespace LoRa;
-
-#define PIN_MISO 4
-#define PIN_CS 26
-#define PIN_SCK 2
-#define PIN_MOSI 3
-#define PIN_DIO0 22
-
-#define SPI_PORT spi0
 #define READ_BIT 0x80
 
 #define LORA_RTTY_COUNT 0
@@ -510,9 +500,17 @@ int BuildLoRaPositionPacket(struct TGPS *GPS, unsigned char *TxLine)
 
 
 
-// using namespace Codebrane;
-
-LoRa::LoRa() {}
+LoRa(spi_inst_t* spi,
+	uint8_t pin_mosi,
+	uint8_t pin_miso,
+	uint8_t pin_sck,
+	uint8_t pin_css,
+	uint8_t pin_di0) :
+	_pin_mosi(pin_mosi),
+	_pin_miso(pin_miso),
+	_pin_sck(pin_sck),
+	_pin_css(pin_css),
+	_pin_di0(pin_di0) {}
 
 void LoRa::init(float Frequency, int Mode, char *Callsign) {
     // Set up SPI LoRa Module
