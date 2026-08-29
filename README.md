@@ -52,6 +52,20 @@ Both the sender and receiver are using these settings:
 | Sync word        | 0x12           |
 | TX power         | 17 dBm         |
 
+## RSSI
+
+A rough guide to LoRa RSSI is:
+
+|             RSSI | Rough interpretation      |
+| ---------------: | ------------------------- |
+|   -40 to -70 dBm | Very strong               |
+|   -70 to -90 dBm | Strong/good               |
+|  -90 to -110 dBm | Usable                    |
+| -110 to -120 dBm | Weak                      |
+|   below -120 dBm | Getting close to the edge |
+
+Negative SNR can still give completely valid reception. With SF7/125 kHz, though, you won't get as far below the noise floor as you could with higher spreading factors such as SF10–SF12.
+
 ## Setting up the sender and receiver
 
 First build both the sender and receiver:
