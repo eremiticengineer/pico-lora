@@ -116,7 +116,7 @@ pico-examples/freertos/FreeRTOSConfig_examples_common.h
 
 ## Interesting
 
-The project uses two pico 2 boards so I you later have a Raspberry Pi, ESP32, or something else decoding the same protocol, make the byte order explicit so the protocol doesn’t depend on CPU endianness.
+The project uses two pico 2 boards so if you later have a Raspberry Pi, ESP32, or something else decoding the same protocol, make the byte order explicit so the protocol doesn’t depend on CPU endianness.
 
 The example weather station data is in the packet as:
 
