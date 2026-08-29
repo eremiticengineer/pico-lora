@@ -94,8 +94,15 @@ void lora_receive_weather_data_task(void* params) {
     uint32_t expectedSequence = 0;
     bool firstPacket = true;
 
+    LoRaStats stats;
+
     while (true) {
         if (pLora->receive(packet)) {
+            /*
+             * Read these immediately after receiving
+             * the packet. They refer to the most
+             * recently received LoRa packet.
+             */            
             const int16_t rssi = pLora->getPacketRssi();
             const float snr = pLora->getPacketSnr();
 
@@ -111,6 +118,9 @@ void lora_receive_weather_data_task(void* params) {
 
             const uint32_t sequence = header.sequence;
 
+            /*
+             * Sequence tracking.
+             */
             if (firstPacket) {
                 expectedSequence = sequence + 1;
                 firstPacket = false;
@@ -126,6 +136,12 @@ void lora_receive_weather_data_task(void* params) {
             else {
                 printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
             }
+
+            /*
+             * Add this successfully received packet
+             * to the running radio statistics.
+             */
+            stats.addPacket(rssi, snr);
 
             switch (header.type) {
                 case PacketType::Weather: {
@@ -184,6 +200,29 @@ void lora_receive_weather_data_task(void* params) {
 
                     printf("direction=%u° (%s)\n", weather.windDirectionDegrees,
                         windDirectionName(weather.windDirectionDegrees));
+                    
+                    printf(
+                        "LINK "
+                        "received=%llu "
+                        "lost=%llu "
+                        "loss=%.2f%% "
+                        "RSSI avg=%.1fdBm "
+                        "min=%ddBm "
+                        "SNR avg=%.1fdB "
+                        "min=%.1fdB\n",
+
+                        static_cast<unsigned long long>(stats.packetsReceived),
+
+                        static_cast<unsigned long long>(stats.packetsLost),
+
+                        stats.packetLossPercentage(),
+
+                        stats.averageRssi(),
+                        stats.minimumRssi,
+
+                        stats.averageSnr(),
+                        stats.minimumSnr
+                    );
 
                     break;
                 }

@@ -55,6 +55,71 @@ inline const char* windDirectionName(uint16_t degrees) {
     return directions[index];
 }
 
+struct LoRaStats {
+    uint64_t packetsReceived = 0;
+    uint64_t packetsLost = 0;
+
+    int16_t minimumRssi = 0;
+    int64_t totalRssi = 0;
+
+    float minimumSnr = 0.0f;
+    double totalSnr = 0.0;
+
+    bool initialized = false;
+
+    void addPacket(int16_t rssi, float snr) {
+        if (!initialized) {
+            minimumRssi = rssi;
+            minimumSnr = snr;
+            initialized = true;
+        }
+        else {
+            if (rssi < minimumRssi) {
+                minimumRssi = rssi;
+            }
+
+            if (snr < minimumSnr) {
+                minimumSnr = snr;
+            }
+        }
+
+        totalRssi += rssi;
+        totalSnr += snr;
+
+        packetsReceived++;
+    }
+
+    void addLostPackets(uint32_t count) {
+        packetsLost += count;
+    }
+
+    float averageRssi() const {
+        if (packetsReceived == 0) {
+            return 0.0f;
+        }
+
+        return static_cast<float>(totalRssi) / static_cast<float>(packetsReceived);
+    }
+
+    float averageSnr() const {
+        if (packetsReceived == 0) {
+            return 0.0f;
+        }
+
+        return static_cast<float>(totalSnr / static_cast<double>(packetsReceived));
+    }
+
+    float packetLossPercentage() const {
+        const uint64_t totalPackets = packetsReceived + packetsLost;
+
+        if (totalPackets == 0) {
+            return 0.0f;
+        }
+
+        return (static_cast<float>(packetsLost) / static_cast<float>(totalPackets)) * 100.0f;
+    }
+};
+
 /*
  * Guards to ensure struct layout and floating-point representation will work on the wire.
  * The protocol is little endian and is intended for use among pico and esp32.
