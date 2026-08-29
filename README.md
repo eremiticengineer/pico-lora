@@ -114,6 +114,10 @@ is this one from the pico-examples:
 pico-examples/freertos/FreeRTOSConfig_examples_common.h
 ```
 
+## Interesting
+
+The project uses two pico 2 boards so I you later have a Raspberry Pi, ESP32, or something else decoding the same protocol, make the byte order explicit so the protocol doesn’t depend on CPU endianness.
+
 ## References
 
 * [Task priorites](https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities)
