@@ -118,6 +118,29 @@ pico-examples/freertos/FreeRTOSConfig_examples_common.h
 
 The project uses two pico 2 boards so I you later have a Raspberry Pi, ESP32, or something else decoding the same protocol, make the byte order explicit so the protocol doesn’t depend on CPU endianness.
 
+The example weather station data is in the packet as:
+
+```
+temperature            4
+humidity               4
+pressure               4
+
+windSpeed              4
+windGust               4
+windDirectionDegrees   2
+
+rainfall               4
+lux                    4
+batteryVoltage         4
+timestamp              4
+                       --
+                       38 bytes
+
+Plus 6-byte header
+
+44 bytes total
+```
+
 ## References
 
 * [Task priorites](https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities)
