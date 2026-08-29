@@ -1,6 +1,6 @@
 # Pico LoRa Test
 
-This is a simple project to send data from one pico to another over LoRa. Each pico is connected to an SX1278 433MHz module.
+This is a simple project to send data from one pico to another over LoRa. Each pico is connected to an SX1278 433MHz module. The project has a simple text message format but also has a more complex protocol with header, payload type and payload as this is a test harness for my remote, solar powered weather station. It also collects average, minimum and maximum RSSI and SNR as well as detecting lost packets so I can test the range.
 
 ## Cloning the project
 
