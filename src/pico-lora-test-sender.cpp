@@ -24,13 +24,11 @@ namespace lora_config {
 }
 
 void lora_send_task(void* params) {
-
     SX1278* pLora = static_cast<SX1278*>(params);
 
     uint32_t sequence = 0;
 
     while (true) {
-
         uint32_t currentSequence = sequence++;
 
         PacketHeader header {
@@ -63,13 +61,7 @@ void lora_send_task(void* params) {
             message.size()
         );
 
-        if (
-            pLora->send(
-                packet.data(),
-                packet.size()
-            )
-        ) {
-
+        if (pLora->send(packet.data(), packet.size())) {
             printf(
                 "TX seq=%lu version=%u type=%u: %s\n",
                 static_cast<unsigned long>(currentSequence),
@@ -77,18 +69,72 @@ void lora_send_task(void* params) {
                 static_cast<unsigned>(header.type),
                 message.c_str()
             );
-
-        } else {
-
+        }
+        else {
             printf(
                 "TX failed seq=%lu\n",
                 static_cast<unsigned long>(currentSequence)
             );
         }
 
-        vTaskDelay(
-            pdMS_TO_TICKS(1000)
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void lora_send_weather_data_task(void* params) {
+    SX1278* pLora = static_cast<SX1278*>(params);
+
+    uint32_t sequence = 0;
+
+    while (true) {
+        uint32_t currentSequence = sequence++;
+
+        PacketHeader header {
+            .sequence = currentSequence,
+            .version = 1,
+            .type = PacketType::Weather
+        };
+
+        WeatherPayload weather {
+            .temperature = 12.4f,
+            .humidity = 76.2f,
+            .pressure = 1008.6f
+        };
+
+        std::vector<uint8_t> packet(
+            sizeof(PacketHeader) +
+            sizeof(WeatherPayload)
         );
+
+        std::memcpy(
+            packet.data(),
+            &header,
+            sizeof(PacketHeader)
+        );
+
+        std::memcpy(
+            packet.data() + sizeof(PacketHeader),
+            &weather,
+            sizeof(WeatherPayload)
+        );
+
+        if (pLora->send(packet.data(), packet.size())) {
+            printf(
+                "TX seq=%lu temp=%.1f humidity=%.1f pressure=%.1f\n",
+                static_cast<unsigned long>(currentSequence),
+                weather.temperature,
+                weather.humidity,
+                weather.pressure
+            );
+        }
+        else {
+            printf(
+                "TX failed seq=%lu\n",
+                static_cast<unsigned long>(currentSequence)
+            );
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -117,7 +163,8 @@ int main( void )
 
     if (lora.init(config)) {
         printf("SX1278 detected, version: 0x%02X\n", lora.getVersion());
-        xTaskCreate(lora_send_task, "LoRaSendTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
+        //xTaskCreate(lora_send_task, "LoRaSendTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
+        xTaskCreate(lora_send_weather_data_task, "LoRaSendWeatherDataTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
         vTaskStartScheduler();
     }
     else {

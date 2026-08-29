@@ -13,3 +13,9 @@ struct __attribute__((packed)) PacketHeader {
     uint8_t version;
     PacketType type;
 };
+
+struct __attribute__((packed)) WeatherPayload {
+    float temperature;
+    float humidity;
+    float pressure;
+};
