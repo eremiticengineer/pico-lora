@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "hardware/spi.h"
 
@@ -68,6 +69,7 @@ public:
     );
 
     bool receive(std::string& data);
+    bool receive(std::vector<uint8_t>& data);
 
     void startReceive();
 

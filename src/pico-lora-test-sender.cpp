@@ -4,10 +4,12 @@
 
 #include <string>
 #include <cstring>
+#include <vector>
 
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "LoRaPacket.hpp"
 #include "SX1278.hpp"
 
 #define LORA_SEND_TASK_PRIORITY (tskIDLE_PRIORITY + 2UL)
@@ -22,33 +24,71 @@ namespace lora_config {
 }
 
 void lora_send_task(void* params) {
+
     SX1278* pLora = static_cast<SX1278*>(params);
 
     uint32_t sequence = 0;
 
     while (true) {
+
         uint32_t currentSequence = sequence++;
 
-        std::string payload =
-            std::to_string(currentSequence) +
-            "|" +
-            "Hello from Pico";
+        PacketHeader header {
+            .sequence = currentSequence,
+            .version = 1,
+            .type = PacketType::Status
+        };
 
-        if (pLora->send(payload)) {
+        std::string message = "Hello from Pico";
+
+        std::vector<uint8_t> packet(
+            sizeof(PacketHeader) + message.size()
+        );
+
+        /*
+         * Packet layout:
+         *
+         * [ PacketHeader ][ payload bytes ]
+         */
+
+        std::memcpy(
+            packet.data(),
+            &header,
+            sizeof(PacketHeader)
+        );
+
+        std::memcpy(
+            packet.data() + sizeof(PacketHeader),
+            message.data(),
+            message.size()
+        );
+
+        if (
+            pLora->send(
+                packet.data(),
+                packet.size()
+            )
+        ) {
+
             printf(
-                "TX seq=%lu: %s\n",
+                "TX seq=%lu version=%u type=%u: %s\n",
                 static_cast<unsigned long>(currentSequence),
-                payload.c_str()
+                static_cast<unsigned>(header.version),
+                static_cast<unsigned>(header.type),
+                message.c_str()
             );
-        }
-        else {
+
+        } else {
+
             printf(
                 "TX failed seq=%lu\n",
                 static_cast<unsigned long>(currentSequence)
             );
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(
+            pdMS_TO_TICKS(1000)
+        );
     }
 }
 

@@ -763,6 +763,54 @@ bool SX1278::receive(
     return true;
 }
 
+bool SX1278::receive(std::vector<uint8_t>& data) {
+
+    const uint8_t flags =
+        readRegister(REG_IRQ_FLAGS);
+
+    if (!(flags & IRQ_RX_DONE_MASK)) {
+        return false;
+    }
+
+    if (flags & IRQ_PAYLOAD_CRC_ERROR_MASK) {
+
+        writeRegister(
+            REG_IRQ_FLAGS,
+            0xFF
+        );
+
+        return false;
+    }
+
+    const uint8_t length =
+        readRegister(REG_RX_NB_BYTES);
+
+    const uint8_t fifoAddress =
+        readRegister(REG_FIFO_RX_CURRENT_ADDR);
+
+    writeRegister(
+        REG_FIFO_ADDR_PTR,
+        fifoAddress
+    );
+
+    data.resize(length);
+
+    if (length > 0) {
+
+        readBurst(
+            REG_FIFO,
+            data.data(),
+            length
+        );
+    }
+
+    writeRegister(
+        REG_IRQ_FLAGS,
+        0xFF
+    );
+
+    return true;
+}
 
 void SX1278::standby() {
 

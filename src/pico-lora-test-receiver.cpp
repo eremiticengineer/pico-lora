@@ -5,6 +5,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include <cstring>
+#include <vector>
+
+#include "LoRaPacket.hpp"
 #include "SX1278.hpp"
 
 #define LORA_RECEIVE_TASK_PRIORITY (tskIDLE_PRIORITY + 2UL)
@@ -19,47 +23,86 @@ namespace lora_config {
 }
 
 void lora_receive_task(void* params) {
+
     SX1278* pLora = static_cast<SX1278*>(params);
 
-    std::string message;
+    std::vector<uint8_t> packet;
 
     uint32_t expectedSequence = 0;
     bool firstPacket = true;
 
     while (true) {
-        if (pLora->receive(message)) {
-            size_t separator = message.find('|');
 
-            if (separator == std::string::npos) {
-                printf("Invalid packet: %s\n", message.c_str());
+        if (pLora->receive(packet)) {
+
+            if (packet.size() < sizeof(PacketHeader)) {
+
+                printf(
+                    "Invalid packet: too short (%u bytes)\n",
+                    static_cast<unsigned>(packet.size())
+                );
+
+                vTaskDelay(pdMS_TO_TICKS(10));
                 continue;
             }
 
-            uint32_t sequence = static_cast<uint32_t>(std::stoul(message.substr(0, separator)));
+            PacketHeader header;
 
-            std::string payload = message.substr(separator + 1);
+            std::memcpy(
+                &header,
+                packet.data(),
+                sizeof(PacketHeader)
+            );
+
+            const uint32_t sequence = header.sequence;
 
             if (firstPacket) {
+
                 expectedSequence = sequence + 1;
                 firstPacket = false;
 
-            }
-            else if (sequence == expectedSequence) {
-                // Exactly what we expected.
+            } else if (sequence == expectedSequence) {
+
                 expectedSequence++;
 
-            }
-            else if (sequence > expectedSequence) {
-                uint32_t lost = sequence - expectedSequence;
-                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
-                expectedSequence = sequence + 1;
+            } else if (sequence > expectedSequence) {
 
-            }
-            else {
-                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
+                uint32_t lost =
+                    sequence - expectedSequence;
+
+                printf(
+                    "Lost %lu packet(s)\n",
+                    static_cast<unsigned long>(lost)
+                );
+
+                expectedSequence =
+                    sequence + 1;
+
+            } else {
+
+                printf(
+                    "Old/duplicate packet: %lu\n",
+                    static_cast<unsigned long>(sequence)
+                );
             }
 
-            printf("RX seq=%lu: %s\n", static_cast<unsigned long>(sequence), payload.c_str());
+            const size_t payloadLength =
+                packet.size() - sizeof(PacketHeader);
+
+            std::string payload(
+                reinterpret_cast<const char*>(
+                    packet.data() + sizeof(PacketHeader)
+                ),
+                payloadLength
+            );
+
+            printf(
+                "RX seq=%lu version=%u type=%u: %s\n",
+                static_cast<unsigned long>(header.sequence),
+                static_cast<unsigned>(header.version),
+                static_cast<unsigned>(header.type),
+                payload.c_str()
+            );
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
