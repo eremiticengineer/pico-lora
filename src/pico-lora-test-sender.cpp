@@ -44,6 +44,16 @@ int main( void )
 {
     stdio_init_all();
 
+    SX1278Config config;
+    config.frequencyHz = 433000000;
+    config.bandwidth = LoRaBandwidth::BW_125_KHZ;
+    config.codingRate = LoRaCodingRate::CR_4_5;
+    config.spreadingFactor = 7;
+    config.crcEnabled = true;
+    config.preambleLength = 8;
+    config.syncWord = 0x12;
+    config.txPowerDbm = 17;
+
     SX1278 lora(
         lora_config::SPI,
         lora_config::CS,
@@ -53,7 +63,7 @@ int main( void )
         lora_config::MISO
     );
 
-    if (lora.init(433000000)) {
+    if (lora.init(config)) {
         printf("SX1278 detected, version: 0x%02X\n", lora.getVersion());
         xTaskCreate(lora_send_task, "LoRaSendTask", 512, (void*)&lora, LORA_SEND_TASK_PRIORITY, nullptr);
         vTaskStartScheduler();

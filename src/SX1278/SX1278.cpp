@@ -8,8 +8,6 @@
 
 namespace {
 
-// Registers
-
 constexpr uint8_t REG_FIFO                 = 0x00;
 constexpr uint8_t REG_OP_MODE              = 0x01;
 
@@ -33,17 +31,12 @@ constexpr uint8_t REG_MODEM_CONFIG_2       = 0x1E;
 
 constexpr uint8_t REG_PREAMBLE_MSB         = 0x20;
 constexpr uint8_t REG_PREAMBLE_LSB         = 0x21;
-
 constexpr uint8_t REG_PAYLOAD_LENGTH       = 0x22;
 
 constexpr uint8_t REG_MODEM_CONFIG_3       = 0x26;
 
 constexpr uint8_t REG_SYNC_WORD            = 0x39;
-
 constexpr uint8_t REG_VERSION              = 0x42;
-
-
-// Operating modes
 
 constexpr uint8_t MODE_LONG_RANGE_MODE = 0x80;
 
@@ -52,20 +45,16 @@ constexpr uint8_t MODE_STANDBY       = 0x01;
 constexpr uint8_t MODE_TX            = 0x03;
 constexpr uint8_t MODE_RX_CONTINUOUS = 0x05;
 
+constexpr uint8_t IRQ_RX_DONE_MASK =
+    0x40;
 
-// IRQ flags
+constexpr uint8_t IRQ_PAYLOAD_CRC_ERROR_MASK =
+    0x20;
 
-constexpr uint8_t IRQ_RX_DONE_MASK          = 0x40;
-constexpr uint8_t IRQ_PAYLOAD_CRC_ERROR_MASK = 0x20;
-constexpr uint8_t IRQ_TX_DONE_MASK          = 0x08;
-
-
-// SX1278 oscillator frequency
+constexpr uint8_t IRQ_TX_DONE_MASK =
+    0x08;
 
 constexpr uint32_t FXOSC = 32000000;
-
-
-// Maximum LoRa packet size
 
 constexpr size_t MAX_PACKET_SIZE = 255;
 
@@ -89,41 +78,61 @@ SX1278::SX1278(
 }
 
 
-bool SX1278::init(uint32_t frequencyHz) {
+bool SX1278::init(
+    const SX1278Config& config
+) {
 
-    // SX1278 supports SPI up to 10 MHz.
-    // 1 MHz is deliberately conservative for initial testing.
+    /*
+     * SX1278 SPI maximum is much higher than this,
+     * but 1 MHz is a nice conservative starting point.
+     */
 
-    spi_init(_spi, 1000 * 1000);
+    spi_init(
+        _spi,
+        1000 * 1000
+    );
 
-    gpio_set_function(_sckPin, GPIO_FUNC_SPI);
-    gpio_set_function(_mosiPin, GPIO_FUNC_SPI);
-    gpio_set_function(_misoPin, GPIO_FUNC_SPI);
+    gpio_set_function(
+        _sckPin,
+        GPIO_FUNC_SPI
+    );
 
+    gpio_set_function(
+        _mosiPin,
+        GPIO_FUNC_SPI
+    );
 
-    // Chip select
+    gpio_set_function(
+        _misoPin,
+        GPIO_FUNC_SPI
+    );
+
 
     gpio_init(_csPin);
     gpio_set_dir(_csPin, GPIO_OUT);
     gpio_put(_csPin, 1);
 
 
-    // Reset
-
     gpio_init(_resetPin);
     gpio_set_dir(_resetPin, GPIO_OUT);
+
 
     reset();
 
 
-    // SX1276/77/78/79 reports version 0x12.
+    /*
+     * SX1276/77/78/79 normally reports 0x12.
+     */
 
     if (getVersion() != 0x12) {
         return false;
     }
 
 
-    // Enter sleep before enabling LoRa mode.
+    /*
+     * Enter sleep first because LoRa mode
+     * should be selected while sleeping.
+     */
 
     writeRegister(
         REG_OP_MODE,
@@ -135,13 +144,14 @@ bool SX1278::init(uint32_t frequencyHz) {
         MODE_LONG_RANGE_MODE | MODE_SLEEP
     );
 
-
     sleep_ms(10);
 
     standby();
 
 
-    // FIFO layout
+    /*
+     * FIFO base addresses.
+     */
 
     writeRegister(
         REG_FIFO_TX_BASE_ADDR,
@@ -154,22 +164,26 @@ bool SX1278::init(uint32_t frequencyHz) {
     );
 
 
-    setFrequency(frequencyHz);
+    setFrequency(
+        config.frequencyHz
+    );
+
+
+    setTxPower(
+        config.txPowerDbm
+    );
 
 
     /*
-     * PA_BOOST output.
+     * Enable LNA boost.
      *
-     * Default power = 17 dBm.
-     */
-
-    setTxPower(17);
-
-
-    /*
-     * Improve sensitivity.
+     * Existing value:
      *
-     * Bits 1:0 = 11 enables LNA boost.
+     * xxxx xx00
+     *
+     * OR 0x03:
+     *
+     * xxxx xx11
      */
 
     writeRegister(
@@ -178,89 +192,54 @@ bool SX1278::init(uint32_t frequencyHz) {
     );
 
 
-    /*
-     * ModemConfig1
-     *
-     * bits 7:4 bandwidth:
-     *      0111 = 125 kHz
-     *
-     * bits 3:1 coding rate:
-     *      001 = 4/5
-     *
-     * bit 0:
-     *      0 = explicit header
-     *
-     * 0111 0010 = 0x72
-     */
-
-    writeRegister(
-        REG_MODEM_CONFIG_1,
-        0x72
-    );
+    configureModem(config);
 
 
     /*
-     * ModemConfig2
+     * Preamble length.
      *
-     * bits 7:4:
-     *      0111 = spreading factor 7
+     * Example:
      *
-     * bit 2:
-     *      1 = payload CRC enabled
+     * 8 decimal = 0x0008
      *
-     * 0111 0100 = 0x74
+     * MSB = 0x00
+     * LSB = 0x08
      */
-
-    writeRegister(
-        REG_MODEM_CONFIG_2,
-        0x74
-    );
-
-
-    /*
-     * ModemConfig3
-     *
-     * bit 2:
-     *      AGC auto enabled
-     */
-
-    writeRegister(
-        REG_MODEM_CONFIG_3,
-        0x04
-    );
-
-
-    // Preamble length = 8 symbols
 
     writeRegister(
         REG_PREAMBLE_MSB,
-        0x00
+        static_cast<uint8_t>(
+            config.preambleLength >> 8
+        )
     );
 
     writeRegister(
         REG_PREAMBLE_LSB,
-        0x08
+        static_cast<uint8_t>(
+            config.preambleLength
+        )
+    );
+
+
+    writeRegister(
+        REG_SYNC_WORD,
+        config.syncWord
     );
 
 
     /*
-     * LoRa public/default sync word.
+     * Clear all IRQ flags.
      *
-     * Both radios MUST use the same value.
+     * Writing 1 clears each corresponding flag.
+     *
+     * 1111 1111 = 0xFF
      */
-
-    writeRegister(
-        REG_SYNC_WORD,
-        0x12
-    );
-
-
-    // Clear any pending IRQs.
 
     writeRegister(
         REG_IRQ_FLAGS,
         0xFF
     );
+
 
     standby();
 
@@ -268,13 +247,196 @@ bool SX1278::init(uint32_t frequencyHz) {
 }
 
 
+void SX1278::configureModem(
+    const SX1278Config& config
+) {
+
+    /*
+     * REG_MODEM_CONFIG_1
+     *
+     * bits 7:4 = bandwidth
+     * bits 3:1 = coding rate
+     * bit  0   = implicit header mode
+     *
+     * We use explicit header mode,
+     * so bit 0 remains 0.
+     *
+     * Default:
+     *
+     * bandwidth 125 kHz = 7
+     *
+     *      0111
+     *
+     * coding rate 4/5 = 1
+     *
+     *      001
+     *
+     * explicit header = 0
+     *
+     * Result:
+     *
+     *      0111 0010
+     *
+     *      = 0x72
+     */
+
+    uint8_t modemConfig1 =
+        (
+            static_cast<uint8_t>(
+                config.bandwidth
+            ) << 4
+        )
+        |
+        (
+            static_cast<uint8_t>(
+                config.codingRate
+            ) << 1
+        );
+
+
+    writeRegister(
+        REG_MODEM_CONFIG_1,
+        modemConfig1
+    );
+
+
+    /*
+     * REG_MODEM_CONFIG_2
+     *
+     * bits 7:4 = spreading factor
+     * bit  3   = TX continuous mode
+     * bit  2   = RX payload CRC
+     * bits 1:0 = symbol timeout MSBs
+     *
+     *
+     * Default SF7:
+     *
+     *      0111 xxxx
+     *
+     * CRC enabled:
+     *
+     *      xxxx x1xx
+     *
+     * Result:
+     *
+     *      0111 0100
+     *
+     *      = 0x74
+     */
+
+    uint8_t spreadingFactor =
+        std::clamp<uint8_t>(
+            config.spreadingFactor,
+            6,
+            12
+        );
+
+
+    uint8_t modemConfig2 =
+        spreadingFactor << 4;
+
+
+    if (config.crcEnabled) {
+
+        modemConfig2 |=
+            (1 << 2);
+
+        /*
+         * Bit 2:
+         *
+         * 0000 0100
+         *
+         * = 0x04
+         */
+    }
+
+
+    writeRegister(
+        REG_MODEM_CONFIG_2,
+        modemConfig2
+    );
+
+
+    /*
+     * REG_MODEM_CONFIG_3
+     *
+     * bit 3 = low data rate optimisation
+     * bit 2 = AGC auto
+     *
+     * For now:
+     *
+     *      0000 0100
+     *
+     * AGC enabled.
+     */
+
+    uint8_t modemConfig3 =
+        0x04;
+
+
+    /*
+     * Low Data Rate Optimisation should be
+     * enabled when symbol duration exceeds 16 ms.
+     *
+     * Tsymbol = 2^SF / bandwidth
+     *
+     * Commonly required for:
+     *
+     * SF11 / 125 kHz
+     * SF12 / 125 kHz
+     *
+     * We'll automatically enable it for
+     * those common configurations.
+     */
+
+    if (
+        config.bandwidth ==
+            LoRaBandwidth::BW_125_KHZ
+        &&
+        spreadingFactor >= 11
+    ) {
+
+        /*
+         * Enable bit 3:
+         *
+         * 0000 1000
+         *
+         * plus AGC:
+         *
+         * 0000 0100
+         *
+         * gives:
+         *
+         * 0000 1100
+         *
+         * = 0x0C
+         */
+
+        modemConfig3 |=
+            (1 << 3);
+    }
+
+
+    writeRegister(
+        REG_MODEM_CONFIG_3,
+        modemConfig3
+    );
+}
+
+
 void SX1278::reset() {
 
-    gpio_put(_resetPin, 0);
+    gpio_put(
+        _resetPin,
+        0
+    );
 
     sleep_ms(1);
 
-    gpio_put(_resetPin, 1);
+    gpio_put(
+        _resetPin,
+        1
+    );
 
     sleep_ms(10);
 }
@@ -282,67 +444,110 @@ void SX1278::reset() {
 
 uint8_t SX1278::getVersion() {
 
-    return readRegister(REG_VERSION);
+    return readRegister(
+        REG_VERSION
+    );
 }
 
 
-void SX1278::setFrequency(uint32_t frequencyHz) {
+void SX1278::setFrequency(
+    uint32_t frequencyHz
+) {
 
     /*
+     * SX1278 frequency register:
+     *
      * FRF =
      *
      * frequency * 2^19 / FXOSC
+     *
+     * where FXOSC = 32 MHz
      */
 
     uint64_t frf =
-        (static_cast<uint64_t>(frequencyHz) << 19)
+        (
+            static_cast<uint64_t>(
+                frequencyHz
+            ) << 19
+        )
         / FXOSC;
+
 
     writeRegister(
         REG_FRF_MSB,
-        static_cast<uint8_t>(frf >> 16)
+        static_cast<uint8_t>(
+            frf >> 16
+        )
     );
 
     writeRegister(
         REG_FRF_MID,
-        static_cast<uint8_t>(frf >> 8)
+        static_cast<uint8_t>(
+            frf >> 8
+        )
     );
 
     writeRegister(
         REG_FRF_LSB,
-        static_cast<uint8_t>(frf)
+        static_cast<uint8_t>(
+            frf
+        )
     );
 }
 
 
-void SX1278::setTxPower(uint8_t powerDbm) {
+void SX1278::setTxPower(
+    uint8_t powerDbm
+) {
 
     /*
-     * Using PA_BOOST.
+     * PA_BOOST output.
      *
-     * Normal useful range:
-     *
-     * 2-17 dBm
+     * Clamp to the normal 2-17 dBm range.
      */
 
-    powerDbm = std::clamp<uint8_t>(
-        powerDbm,
-        2,
-        17
-    );
+    powerDbm =
+        std::clamp<uint8_t>(
+            powerDbm,
+            2,
+            17
+        );
 
 
     /*
-     * PA_BOOST = bit 7
+     * REG_PA_CONFIG
      *
-     * Output power:
+     * bit 7 = PA_BOOST
+     *
+     *      1000 0000
+     *
+     *      = 0x80
+     *
+     * bits 3:0 = OutputPower
      *
      * Pout = 2 + OutputPower
+     *
+     * Example 17 dBm:
+     *
+     * OutputPower = 15
+     *
+     *      0000 1111
+     *
+     * PA_BOOST:
+     *
+     *      1000 0000
+     *
+     * Result:
+     *
+     *      1000 1111
+     *
+     *      = 0x8F
      */
 
     writeRegister(
         REG_PA_CONFIG,
-        0x80 | (powerDbm - 2)
+        0x80 |
+        (powerDbm - 2)
     );
 }
 
@@ -353,7 +558,9 @@ bool SX1278::send(
 ) {
 
     return send(
-        reinterpret_cast<const uint8_t*>(data.data()),
+        reinterpret_cast<const uint8_t*>(
+            data.data()
+        ),
         data.size(),
         timeoutMs
     );
@@ -366,11 +573,12 @@ bool SX1278::send(
     uint32_t timeoutMs
 ) {
 
-    if (data == nullptr || length == 0) {
-        return false;
-    }
+    if (
+        data == nullptr ||
+        length == 0 ||
+        length > MAX_PACKET_SIZE
+    ) {
 
-    if (length > MAX_PACKET_SIZE) {
         return false;
     }
 
@@ -378,15 +586,11 @@ bool SX1278::send(
     standby();
 
 
-    // Clear previous IRQs.
-
     writeRegister(
         REG_IRQ_FLAGS,
         0xFF
     );
 
-
-    // Start writing at TX FIFO base.
 
     writeRegister(
         REG_FIFO_ADDR_PTR,
@@ -403,26 +607,35 @@ bool SX1278::send(
 
     writeRegister(
         REG_PAYLOAD_LENGTH,
-        static_cast<uint8_t>(length)
+        static_cast<uint8_t>(
+            length
+        )
     );
 
 
-    // Start transmitting.
-
-    setMode(MODE_TX);
+    setMode(
+        MODE_TX
+    );
 
 
     const absolute_time_t timeout =
-        make_timeout_time_ms(timeoutMs);
+        make_timeout_time_ms(
+            timeoutMs
+        );
 
 
     while (true) {
 
         const uint8_t flags =
-            readRegister(REG_IRQ_FLAGS);
+            readRegister(
+                REG_IRQ_FLAGS
+            );
 
 
-        if (flags & IRQ_TX_DONE_MASK) {
+        if (
+            flags &
+            IRQ_TX_DONE_MASK
+        ) {
 
             writeRegister(
                 REG_IRQ_FLAGS,
@@ -435,20 +648,18 @@ bool SX1278::send(
         }
 
 
-        if (absolute_time_diff_us(
+        if (
+            absolute_time_diff_us(
                 get_absolute_time(),
                 timeout
-            ) <= 0) {
+            ) <= 0
+        ) {
 
             standby();
 
             return false;
         }
 
-
-        /*
-         * Tiny wait so we aren't hammering SPI continuously.
-         */
 
         sleep_us(100);
     }
@@ -478,20 +689,28 @@ void SX1278::startReceive() {
 }
 
 
-bool SX1278::receive(std::string& data) {
+bool SX1278::receive(
+    std::string& data
+) {
 
     const uint8_t flags =
-        readRegister(REG_IRQ_FLAGS);
+        readRegister(
+            REG_IRQ_FLAGS
+        );
 
 
-    if (!(flags & IRQ_RX_DONE_MASK)) {
+    if (
+        !(flags & IRQ_RX_DONE_MASK)
+    ) {
+
         return false;
     }
 
 
-    // CRC failure.
-
-    if (flags & IRQ_PAYLOAD_CRC_ERROR_MASK) {
+    if (
+        flags &
+        IRQ_PAYLOAD_CRC_ERROR_MASK
+    ) {
 
         writeRegister(
             REG_IRQ_FLAGS,
@@ -503,11 +722,15 @@ bool SX1278::receive(std::string& data) {
 
 
     const uint8_t length =
-        readRegister(REG_RX_NB_BYTES);
+        readRegister(
+            REG_RX_NB_BYTES
+        );
 
 
     const uint8_t fifoAddress =
-        readRegister(REG_FIFO_RX_CURRENT_ADDR);
+        readRegister(
+            REG_FIFO_RX_CURRENT_ADDR
+        );
 
 
     writeRegister(
@@ -523,13 +746,13 @@ bool SX1278::receive(std::string& data) {
 
         readBurst(
             REG_FIFO,
-            reinterpret_cast<uint8_t*>(data.data()),
+            reinterpret_cast<uint8_t*>(
+                data.data()
+            ),
             length
         );
     }
 
-
-    // Clear IRQ flags.
 
     writeRegister(
         REG_IRQ_FLAGS,
@@ -543,36 +766,51 @@ bool SX1278::receive(std::string& data) {
 
 void SX1278::standby() {
 
-    setMode(MODE_STANDBY);
+    setMode(
+        MODE_STANDBY
+    );
 }
 
 
 void SX1278::sleep() {
 
-    setMode(MODE_SLEEP);
-}
-
-
-void SX1278::setMode(uint8_t mode) {
-
-    writeRegister(
-        REG_OP_MODE,
-        MODE_LONG_RANGE_MODE | mode
+    setMode(
+        MODE_SLEEP
     );
 }
 
 
-uint8_t SX1278::readRegister(uint8_t address) {
+void SX1278::setMode(
+    uint8_t mode
+) {
+
+    writeRegister(
+        REG_OP_MODE,
+        MODE_LONG_RANGE_MODE |
+        mode
+    );
+}
+
+
+uint8_t SX1278::readRegister(
+    uint8_t address
+) {
 
     uint8_t tx[] = {
-        static_cast<uint8_t>(address & 0x7F),
+        static_cast<uint8_t>(
+            address & 0x7F
+        ),
         0x00
     };
 
     uint8_t rx[2] = {};
 
 
-    gpio_put(_csPin, 0);
+    gpio_put(
+        _csPin,
+        0
+    );
+
 
     spi_write_read_blocking(
         _spi,
@@ -581,7 +819,11 @@ uint8_t SX1278::readRegister(uint8_t address) {
         2
     );
 
-    gpio_put(_csPin, 1);
+
+    gpio_put(
+        _csPin,
+        1
+    );
 
 
     return rx[1];
@@ -603,7 +845,11 @@ void SX1278::writeRegister(
     };
 
 
-    gpio_put(_csPin, 0);
+    gpio_put(
+        _csPin,
+        0
+    );
+
 
     spi_write_blocking(
         _spi,
@@ -611,7 +857,11 @@ void SX1278::writeRegister(
         sizeof(buffer)
     );
 
-    gpio_put(_csPin, 1);
+
+    gpio_put(
+        _csPin,
+        1
+    );
 }
 
 
@@ -625,7 +875,10 @@ void SX1278::writeBurst(
         address | 0x80;
 
 
-    gpio_put(_csPin, 0);
+    gpio_put(
+        _csPin,
+        0
+    );
 
 
     spi_write_blocking(
@@ -642,7 +895,10 @@ void SX1278::writeBurst(
     );
 
 
-    gpio_put(_csPin, 1);
+    gpio_put(
+        _csPin,
+        1
+    );
 }
 
 
@@ -656,7 +912,10 @@ void SX1278::readBurst(
         address & 0x7F;
 
 
-    gpio_put(_csPin, 0);
+    gpio_put(
+        _csPin,
+        0
+    );
 
 
     spi_write_blocking(
@@ -674,5 +933,8 @@ void SX1278::readBurst(
     );
 
 
-    gpio_put(_csPin, 1);
+    gpio_put(
+        _csPin,
+        1
+    );
 }
