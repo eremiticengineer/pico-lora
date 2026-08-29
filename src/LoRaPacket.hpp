@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 enum class PacketType : uint8_t {
     Weather = 1,
@@ -53,3 +54,13 @@ inline const char* windDirectionName(uint16_t degrees) {
 
     return directions[index];
 }
+
+/*
+ * Guards to ensure struct layout and floating-point representation will work on the wire.
+ * The protocol is little endian and is intended for use among pico and esp32.
+ * Both platforms normally use 32-bit IEEE-754 float.
+ */
+static_assert(sizeof(float) == 4);
+static_assert(std::numeric_limits<float>::is_iec559);
+static_assert(sizeof(PacketHeader) == 6);
+static_assert(sizeof(WeatherPayload) == 38);
