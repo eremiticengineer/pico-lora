@@ -9,9 +9,6 @@
 
 #define LORA_RECEIVE_TASK_PRIORITY (tskIDLE_PRIORITY + 2UL)
 
-#define UART_BUFFER_SIZE 256
-#define MESSAGE_BUFFER_SIZE 256
-
 namespace lora_config {
     inline spi_inst_t* SPI = spi0;
     inline constexpr uint SCK   = 18;
@@ -22,13 +19,47 @@ namespace lora_config {
 }
 
 void lora_receive_task(void* params) {
-    SX1278 *pLora = static_cast<SX1278 *>(params);
+    SX1278* pLora = static_cast<SX1278*>(params);
 
     std::string message;
 
+    uint32_t expectedSequence = 0;
+    bool firstPacket = true;
+
     while (true) {
         if (pLora->receive(message)) {
-            printf("LoRa RX: %s\n", message.c_str());
+            size_t separator = message.find('|');
+
+            if (separator == std::string::npos) {
+                printf("Invalid packet: %s\n", message.c_str());
+                continue;
+            }
+
+            uint32_t sequence = static_cast<uint32_t>(std::stoul(message.substr(0, separator)));
+
+            std::string payload = message.substr(separator + 1);
+
+            if (firstPacket) {
+                expectedSequence = sequence + 1;
+                firstPacket = false;
+
+            }
+            else if (sequence == expectedSequence) {
+                // Exactly what we expected.
+                expectedSequence++;
+
+            }
+            else if (sequence > expectedSequence) {
+                uint32_t lost = sequence - expectedSequence;
+                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
+                expectedSequence = sequence + 1;
+
+            }
+            else {
+                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
+            }
+
+            printf("RX seq=%lu: %s\n", static_cast<unsigned long>(sequence), payload.c_str());
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));

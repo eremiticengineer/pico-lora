@@ -22,18 +22,30 @@ namespace lora_config {
 }
 
 void lora_send_task(void* params) {
-    SX1278 *pLora = static_cast<SX1278 *>(params);
+    SX1278* pLora = static_cast<SX1278*>(params);
 
-    uint32_t counter = 0;
+    uint32_t sequence = 0;
 
     while (true) {
-        std::string message = "Hello from Pico: " + std::to_string(counter++);
+        uint32_t currentSequence = sequence++;
 
-        if (pLora->send(message)) {
-            printf("LoRa TX: %s\n", message.c_str());
+        std::string payload =
+            std::to_string(currentSequence) +
+            "|" +
+            "Hello from Pico";
+
+        if (pLora->send(payload)) {
+            printf(
+                "TX seq=%lu: %s\n",
+                static_cast<unsigned long>(currentSequence),
+                payload.c_str()
+            );
         }
         else {
-            printf("LoRa TX failed\n");
+            printf(
+                "TX failed seq=%lu\n",
+                static_cast<unsigned long>(currentSequence)
+            );
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
