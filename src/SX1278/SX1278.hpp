@@ -71,6 +71,10 @@ public:
     bool receive(std::string& data);
     bool receive(std::vector<uint8_t>& data);
 
+    int16_t getPacketRssi();
+
+    float getPacketSnr();    
+
     void startReceive();
 
     void standby();

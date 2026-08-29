@@ -38,6 +38,9 @@ constexpr uint8_t REG_MODEM_CONFIG_3       = 0x26;
 constexpr uint8_t REG_SYNC_WORD            = 0x39;
 constexpr uint8_t REG_VERSION              = 0x42;
 
+constexpr uint8_t REG_PKT_SNR_VALUE        = 0x19;
+constexpr uint8_t REG_PKT_RSSI_VALUE       = 0x1A;
+
 constexpr uint8_t MODE_LONG_RANGE_MODE = 0x80;
 
 constexpr uint8_t MODE_SLEEP         = 0x00;
@@ -810,6 +813,51 @@ bool SX1278::receive(std::vector<uint8_t>& data) {
     );
 
     return true;
+}
+
+int16_t SX1278::getPacketRssi() {
+
+    const uint8_t value =
+        readRegister(
+            REG_PKT_RSSI_VALUE
+        );
+
+    /*
+     * SX1278 at 433 MHz uses the LF RSSI offset.
+     *
+     * RSSI[dBm] =
+     *
+     * -164 + RegPktRssiValue
+     */
+
+    return
+        -164 +
+        static_cast<int16_t>(value);
+}
+
+float SX1278::getPacketSnr() {
+
+    const int8_t value =
+        static_cast<int8_t>(
+            readRegister(
+                REG_PKT_SNR_VALUE
+            )
+        );
+
+    /*
+     * Each register step = 0.25 dB.
+     *
+     * Examples:
+     *
+     *  20 ->  5.0 dB
+     *   4 ->  1.0 dB
+     *  -4 -> -1.0 dB
+     * -20 -> -5.0 dB
+     */
+
+    return
+        static_cast<float>(value)
+        / 4.0f;
 }
 
 void SX1278::standby() {

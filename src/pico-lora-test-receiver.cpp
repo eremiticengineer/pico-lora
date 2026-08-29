@@ -32,6 +32,9 @@ void lora_receive_task(void* params) {
 
     while (true) {
         if (pLora->receive(packet)) {
+            const int16_t rssi = pLora->getPacketRssi();
+            const float snr = pLora->getPacketSnr();
+
             if (packet.size() < sizeof(PacketHeader)) {
                 printf("Invalid packet: too short (%u bytes)\n",
                     static_cast<unsigned>(packet.size()));
@@ -70,10 +73,11 @@ void lora_receive_task(void* params) {
                 payloadLength
             );
 
-            printf("RX seq=%lu version=%u type=%u: %s\n",
+            printf("RX seq=%lu version=%u type=%u: rssi:%ddBm, snr:%.1fdB %s\n",
                 static_cast<unsigned long>(header.sequence),
                 static_cast<unsigned>(header.version),
                 static_cast<unsigned>(header.type),
+                rssi, snr,
                 payload.c_str()
             );
         }
@@ -92,6 +96,9 @@ void lora_receive_weather_data_task(void* params) {
 
     while (true) {
         if (pLora->receive(packet)) {
+            const int16_t rssi = pLora->getPacketRssi();
+            const float snr = pLora->getPacketSnr();
+
             if (packet.size() < sizeof(PacketHeader)) {
                 printf("Invalid packet: too short\n");
                 vTaskDelay(pdMS_TO_TICKS(10));
@@ -140,6 +147,8 @@ void lora_receive_weather_data_task(void* params) {
 
                     printf(
                         "RX seq=%lu "
+                        "RSSI=%ddBm "
+                        "SNR=%.1fdB "
                         "temp=%.1fC "
                         "humidity=%.1f%% "
                         "pressure=%.1fhPa "
@@ -152,6 +161,9 @@ void lora_receive_weather_data_task(void* params) {
                         "timestamp=%lu\n",
 
                         static_cast<unsigned long>(header.sequence),
+
+                        rssi,
+                        snr,
 
                         weather.temperature,
                         weather.humidity,
