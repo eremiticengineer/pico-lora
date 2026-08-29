@@ -33,59 +33,44 @@ void lora_receive_task(void* params) {
     while (true) {
         if (pLora->receive(packet)) {
             if (packet.size() < sizeof(PacketHeader)) {
-                printf(
-                    "Invalid packet: too short (%u bytes)\n",
-                    static_cast<unsigned>(packet.size())
-                );
+                printf("Invalid packet: too short (%u bytes)\n",
+                    static_cast<unsigned>(packet.size()));
                 vTaskDelay(pdMS_TO_TICKS(10));
                 continue;
             }
 
             PacketHeader header;
 
-            std::memcpy(
-                &header,
-                packet.data(),
-                sizeof(PacketHeader)
-            );
+            std::memcpy(&header, packet.data(), sizeof(PacketHeader));
 
             const uint32_t sequence = header.sequence;
 
             if (firstPacket) {
                 expectedSequence = sequence + 1;
                 firstPacket = false;
-
             }
             else if (sequence == expectedSequence) {
                 expectedSequence++;
             }
             else if (sequence > expectedSequence) {
                 uint32_t lost = sequence - expectedSequence;
-                printf(
-                    "Lost %lu packet(s)\n",
-                    static_cast<unsigned long>(lost)
-                );
+                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
                 expectedSequence = sequence + 1;
             }
             else {
-                printf(
-                    "Old/duplicate packet: %lu\n",
-                    static_cast<unsigned long>(sequence)
-                );
+                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
             }
 
-            const size_t payloadLength =
-                packet.size() - sizeof(PacketHeader);
+            const size_t payloadLength = packet.size() - sizeof(PacketHeader);
 
-            std::string payload(
-                reinterpret_cast<const char*>(
+            std::string payload(reinterpret_cast<const char*>
+                (
                     packet.data() + sizeof(PacketHeader)
                 ),
                 payloadLength
             );
 
-            printf(
-                "RX seq=%lu version=%u type=%u: %s\n",
+            printf("RX seq=%lu version=%u type=%u: %s\n",
                 static_cast<unsigned long>(header.sequence),
                 static_cast<unsigned>(header.version),
                 static_cast<unsigned>(header.type),
@@ -107,7 +92,6 @@ void lora_receive_weather_data_task(void* params) {
 
     while (true) {
         if (pLora->receive(packet)) {
-
             if (packet.size() < sizeof(PacketHeader)) {
                 printf("Invalid packet: too short\n");
                 vTaskDelay(pdMS_TO_TICKS(10));
@@ -116,11 +100,7 @@ void lora_receive_weather_data_task(void* params) {
 
             PacketHeader header;
 
-            std::memcpy(
-                &header,
-                packet.data(),
-                sizeof(PacketHeader)
-            );
+            std::memcpy(&header, packet.data(), sizeof(PacketHeader));
 
             const uint32_t sequence = header.sequence;
 
@@ -132,31 +112,21 @@ void lora_receive_weather_data_task(void* params) {
                 expectedSequence++;
             }
             else if (sequence > expectedSequence) {
-                uint32_t lost =
-                    sequence - expectedSequence;
-                printf(
-                    "Lost %lu packet(s)\n",
-                    static_cast<unsigned long>(lost)
-                );
+                uint32_t lost = sequence - expectedSequence;
+                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
                 expectedSequence = sequence + 1;
             }
             else {
-                printf(
-                    "Old/duplicate packet: %lu\n",
-                    static_cast<unsigned long>(sequence)
-                );
+                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
             }
 
             switch (header.type) {
                 case PacketType::Weather: {
-                    const size_t expectedSize =
-                        sizeof(PacketHeader) +
-                        sizeof(WeatherPayload);
+                    const size_t expectedSize = sizeof(PacketHeader) + sizeof(WeatherPayload);
 
                     if (packet.size() != expectedSize) {
-                        printf(
-                            "Invalid weather packet size: %u\n",
-                            static_cast<unsigned>(
+                        printf("Invalid weather packet size: %u\n", static_cast<unsigned>
+                            (
                                 packet.size()
                             )
                         );
@@ -165,25 +135,43 @@ void lora_receive_weather_data_task(void* params) {
 
                     WeatherPayload weather;
 
-                    std::memcpy(
-                        &weather,
-                        packet.data() + sizeof(PacketHeader),
-                        sizeof(WeatherPayload)
-                    );
+                    std::memcpy(&weather, packet.data() + sizeof(PacketHeader),
+                        sizeof(WeatherPayload));
 
                     printf(
-                        "RX seq=%lu version=%u "
-                        "temp=%.1f humidity=%.1f pressure=%.1f\n",
-                        static_cast<unsigned long>(
-                            header.sequence
-                        ),
-                        static_cast<unsigned>(
-                            header.version
-                        ),
+                        "RX seq=%lu "
+                        "temp=%.1fC "
+                        "humidity=%.1f%% "
+                        "pressure=%.1fhPa "
+                        "wind=%.1fmph "
+                        "gust=%.1fmph "
+                        "direction=%u "
+                        "rain=%.1fmm "
+                        "lux=%.1f "
+                        "battery=%.2fV "
+                        "timestamp=%lu\n",
+
+                        static_cast<unsigned long>(header.sequence),
+
                         weather.temperature,
                         weather.humidity,
-                        weather.pressure
+                        weather.pressure,
+
+                        weather.windSpeed,
+                        weather.windGust,
+                        weather.windDirectionDegrees,
+
+                        weather.rainfall,
+
+                        weather.lux,
+
+                        weather.batteryVoltage,
+
+                        static_cast<unsigned long>(weather.timestamp)
                     );
+
+                    printf("direction=%u° (%s)\n", weather.windDirectionDegrees,
+                        windDirectionName(weather.windDirectionDegrees));
 
                     break;
                 }
@@ -197,12 +185,7 @@ void lora_receive_weather_data_task(void* params) {
                     break;
 
                 default:
-                    printf(
-                        "Unknown packet type: %u\n",
-                        static_cast<unsigned>(
-                            header.type
-                        )
-                    );
+                    printf("Unknown packet type: %u\n", static_cast<unsigned>(header.type));
                     break;
             }
         }

@@ -39,9 +39,7 @@ void lora_send_task(void* params) {
 
         std::string message = "Hello from Pico";
 
-        std::vector<uint8_t> packet(
-            sizeof(PacketHeader) + message.size()
-        );
+        std::vector<uint8_t> packet(sizeof(PacketHeader) + message.size());
 
         /*
          * Packet layout:
@@ -49,32 +47,19 @@ void lora_send_task(void* params) {
          * [ PacketHeader ][ payload bytes ]
          */
 
-        std::memcpy(
-            packet.data(),
-            &header,
-            sizeof(PacketHeader)
-        );
+        std::memcpy(packet.data(), &header, sizeof(PacketHeader));
 
-        std::memcpy(
-            packet.data() + sizeof(PacketHeader),
-            message.data(),
-            message.size()
-        );
+        std::memcpy(packet.data() + sizeof(PacketHeader), message.data(), message.size());
 
         if (pLora->send(packet.data(), packet.size())) {
-            printf(
-                "TX seq=%lu version=%u type=%u: %s\n",
+            printf("TX seq=%lu version=%u type=%u: %s\n",
                 static_cast<unsigned long>(currentSequence),
                 static_cast<unsigned>(header.version),
                 static_cast<unsigned>(header.type),
-                message.c_str()
-            );
+                message.c_str());
         }
         else {
-            printf(
-                "TX failed seq=%lu\n",
-                static_cast<unsigned long>(currentSequence)
-            );
+            printf("TX failed seq=%lu\n", static_cast<unsigned long>(currentSequence));
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -98,40 +83,36 @@ void lora_send_weather_data_task(void* params) {
         WeatherPayload weather {
             .temperature = 12.4f,
             .humidity = 76.2f,
-            .pressure = 1008.6f
+            .pressure = 1008.6f,
+
+            .windSpeed = 8.7f,
+            .windGust = 14.2f,
+            .windDirectionDegrees = 23,
+
+            .rainfall = 1.4f,
+
+            .lux = 12500.0f,
+
+            .batteryVoltage = 4.87f,
+
+            .timestamp = 1788004800
         };
 
-        std::vector<uint8_t> packet(
-            sizeof(PacketHeader) +
-            sizeof(WeatherPayload)
-        );
+        std::vector<uint8_t> packet(sizeof(PacketHeader) + sizeof(WeatherPayload));
 
-        std::memcpy(
-            packet.data(),
-            &header,
-            sizeof(PacketHeader)
-        );
+        std::memcpy(packet.data(), &header, sizeof(PacketHeader));
 
-        std::memcpy(
-            packet.data() + sizeof(PacketHeader),
-            &weather,
-            sizeof(WeatherPayload)
-        );
+        std::memcpy(packet.data() + sizeof(PacketHeader), &weather, sizeof(WeatherPayload));
 
         if (pLora->send(packet.data(), packet.size())) {
-            printf(
-                "TX seq=%lu temp=%.1f humidity=%.1f pressure=%.1f\n",
+            printf("TX seq=%lu temp=%.1f humidity=%.1f pressure=%.1f\n",
                 static_cast<unsigned long>(currentSequence),
                 weather.temperature,
                 weather.humidity,
-                weather.pressure
-            );
+                weather.pressure);
         }
         else {
-            printf(
-                "TX failed seq=%lu\n",
-                static_cast<unsigned long>(currentSequence)
-            );
+            printf("TX failed seq=%lu\n", static_cast<unsigned long>(currentSequence));
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
