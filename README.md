@@ -36,6 +36,22 @@ adjust to suit. Wire thus:
 | GP18 | SCK    |
 | GP17 | NSS    |
 
+## Radio settings
+
+Both the sender and receiver are using these settings:
+
+| Setting          | Value          |
+|------------------|----------------|
+| Frequency        | 433.000 MHz    |
+| Bandwidth        | 125 kHz        |
+| Spreading Factor | SF7            |
+| Coding Rate      | 4/5            |
+| Header           | HeaderExplicit |
+| CRC              | Enabled        |
+| Preamble         | 8 symbols      |
+| Sync word        | 0x12           |
+| TX power         | 17 dBm         |
+
 ## Setting up the sender and receiver
 
 First build both the sender and receiver:
