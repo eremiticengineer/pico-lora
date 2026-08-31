@@ -1,13 +1,14 @@
-# Pico
-#sudo openocd \
-#  -f interface/cmsis-dap.cfg \
-#  -f target/rp2040.cfg \
-#  -c "adapter speed 5000" \
-#  -c "program build/pico_lora_test_sender.elf verify reset exit"
-
 # Pico2
 sudo openocd \
   -f interface/cmsis-dap.cfg \
   -f target/rp2350.cfg \
   -c "adapter speed 5000" \
-  -c "program build/pico_lora_test_sender.elf verify reset exit"
+  -c "program build-pico2/pico_lora_test_sender.elf verify reset exit"
+
+sudo openocd \
+  -f interface/cmsis-dap.cfg \
+  -f target/rp2350.cfg \
+  -c "adapter speed 5000" \
+  -c "program build-pico2/pico_lora_test_receiver.elf verify reset exit"
+
+# Seeed Xiao RP2040 not supported with probe
