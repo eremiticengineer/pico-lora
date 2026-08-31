@@ -16,6 +16,24 @@ If you cloned without recursing submodules:
 git submodule update --init --recursive
 ```
 
+## Building for different chips
+
+pico2:
+
+```
+./build_project
+
+or
+
+./build_project pico2
+```
+
+Seeed Xaio rp2040:
+
+```
+./build_project seeed_xiao_rp2040
+```
+
 ## Wiring the pico to the SX1278
 
 The SPI configurations are in:
