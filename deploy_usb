@@ -1,5 +1,7 @@
-# pico
-#cp build/pico_lora_test_sender.uf2 /media/pi/RPI-RP2
-
 # pico2
-cp build/pico_lora_test_sender.uf2 /media/pi/RP2350
+# cp build-pico2/pico_lora_test_sender.uf2 /media/pi/RP2350
+# cp build-pico2/pico_lora_test_receiver.uf2 /media/pi/RP2350
+
+# Seeed Xiao RP2040
+# cp build-seeed_xiao_rp2040/pico_lora_test_sender.uf2 /media/pi/RPI-RP2
+# cp build-seeed_xiao_rp2040/pico_lora_test_receiver.uf2 /media/pi/RPI-RP2
