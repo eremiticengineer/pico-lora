@@ -1,5 +1,7 @@
 # Build output
 build/
+build-pico2/
+build-seeed_xiao_rp2040/
 cmake-build-*/
 
 # CMake generated files
