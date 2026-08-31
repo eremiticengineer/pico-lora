@@ -14,6 +14,17 @@
 
 #define LORA_SEND_TASK_PRIORITY (tskIDLE_PRIORITY + 2UL)
 
+#ifdef DEVICE_seeed_xiao_rp2040
+// Seeed Xaio rp2040
+namespace lora_config {
+    inline spi_inst_t* SPI = spi0;
+    inline constexpr uint SCK   = 2;  // P2
+    inline constexpr uint MOSI  = 3;  // P3
+    inline constexpr uint MISO  = 4;  // P4
+    inline constexpr uint CS    = 26; // P26
+    inline constexpr uint RESET = 22; // not used
+}
+#elif defined(DEVICE_pico2)
 namespace lora_config {
     inline spi_inst_t* SPI = spi0;
     inline constexpr uint SCK   = 18;
@@ -22,6 +33,9 @@ namespace lora_config {
     inline constexpr uint CS    = 17;
     inline constexpr uint RESET = 20;
 }
+#else
+#error "No supported DEVICE defined"
+#endif
 
 void lora_send_task(void* params) {
     SX1278* pLora = static_cast<SX1278*>(params);
