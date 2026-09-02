@@ -4,10 +4,20 @@ set(LIBRARY pico_lora)
 set(PROJECT_SENDER pico_lora_test_sender)
 set(PROJECT_RECEIVER pico_lora_test_receiver)
 
+# ---------------------------------------------------------
+# Select board before importing the Pico SDK
+# ---------------------------------------------------------
+if(DEVICE STREQUAL "seeed_xiao_rp2040")
+    set(PICO_BOARD pico CACHE STRING "Board type" FORCE)
+elseif(DEVICE STREQUAL "pico2")
+    set(PICO_BOARD pico2 CACHE STRING "Board type" FORCE)
+else()
+    message(FATAL_ERROR "Unknown DEVICE='${DEVICE}'. Use pico2 or seeed_xiao_rp2040.")
+endif()
+
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(${PROJECT_SENDER} C CXX ASM)
-project(${PROJECT_RECEIVER} C CXX ASM)
+project(${LIBRARY} C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 23)
@@ -42,14 +52,6 @@ target_link_libraries(${LIBRARY} PUBLIC
 # LoRa sender
 # ---------------------------------------------------------
 if(PROJECT_IS_TOP_LEVEL)
-    if(DEVICE STREQUAL "seeed_xiao_rp2040")
-        set(PICO_BOARD pico CACHE STRING "Board type" FORCE)
-    elseif(DEVICE STREQUAL "pico2")
-        set(PICO_BOARD pico2 CACHE STRING "Board type" FORCE)
-    else()
-        message(FATAL_ERROR "Unknown DEVICE='${DEVICE}'. Use pico2 or xiao.")
-    endif()
-
     set(FREERTOS_KERNEL_PATH
         ${CMAKE_CURRENT_LIST_DIR}/lib/FreeRTOS-Kernel
     )
