@@ -7,7 +7,7 @@ This is a simple project to send data from one pico to another over LoRa. Each p
 Clone the project with FreeRTOS submodules to get the pico functionality:
 
 ```
-git clone --recurse-submodules https://github.com/eremiticengineer/pico-lora-test
+git clone --recurse-submodules https://github.com/eremiticengineer/pico-lora
 ```
 
 If you cloned without recursing submodules:
