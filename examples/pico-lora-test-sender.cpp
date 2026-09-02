@@ -137,12 +137,8 @@ int main( void )
 {
     stdio_init_all();
 
-    // Without a delay it mostly doesn't appear on the host
-    for (int c=0; c<5; c++) {
-        printf("waiting\n");
-        sleep_ms(1000);
-    }
-
+    sleep_ms(2000);
+    
     SX1278Config config;
     config.frequencyHz = 433000000;
     config.bandwidth = LoRaBandwidth::BW_125_KHZ;
