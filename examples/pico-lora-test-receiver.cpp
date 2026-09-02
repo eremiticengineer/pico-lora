@@ -249,6 +249,8 @@ int main( void )
 {
     stdio_init_all();
 
+    sleep_ms(2000);
+
     SX1278Config config;
     config.frequencyHz = 433000000;
     config.bandwidth = LoRaBandwidth::BW_125_KHZ;
