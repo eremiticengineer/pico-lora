@@ -28,7 +28,8 @@ void lora_receive_task(void* params) {
     std::vector<uint8_t> packet;
 
     uint32_t expectedSequence = 0;
-    bool firstPacket = true;
+    uint32_t currentSessionId = 0;
+    bool haveSession = false;
 
     while (true) {
         if (pLora->receive(packet)) {
@@ -36,48 +37,74 @@ void lora_receive_task(void* params) {
             const float snr = pLora->getPacketSnr();
 
             if (packet.size() < sizeof(PacketHeader)) {
-                printf("Invalid packet: too short (%u bytes)\n",
-                    static_cast<unsigned>(packet.size()));
+                printf(
+                    "Invalid packet: too short (%u bytes)\n",
+                    static_cast<unsigned>(packet.size())
+                );
+
                 vTaskDelay(pdMS_TO_TICKS(10));
                 continue;
             }
 
             PacketHeader header;
 
-            std::memcpy(&header, packet.data(), sizeof(PacketHeader));
+            std::memcpy(
+                &header,
+                packet.data(),
+                sizeof(PacketHeader)
+            );
 
             const uint32_t sequence = header.sequence;
 
-            if (firstPacket) {
+            if (!haveSession || header.sessionId != currentSessionId) {
+                currentSessionId = header.sessionId;
                 expectedSequence = sequence + 1;
-                firstPacket = false;
+                haveSession = true;
+
+                printf(
+                    "New sender session: %lu\n",
+                    static_cast<unsigned long>(currentSessionId)
+                );
             }
             else if (sequence == expectedSequence) {
                 expectedSequence++;
             }
             else if (sequence > expectedSequence) {
                 uint32_t lost = sequence - expectedSequence;
-                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
+
+                printf(
+                    "Lost %lu packet(s)\n",
+                    static_cast<unsigned long>(lost)
+                );
+
                 expectedSequence = sequence + 1;
             }
             else {
-                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
+                printf(
+                    "Old/duplicate packet: %lu\n",
+                    static_cast<unsigned long>(sequence)
+                );
             }
 
-            const size_t payloadLength = packet.size() - sizeof(PacketHeader);
+            const size_t payloadLength =
+                packet.size() - sizeof(PacketHeader);
 
-            std::string payload(reinterpret_cast<const char*>
-                (
+            std::string payload(
+                reinterpret_cast<const char*>(
                     packet.data() + sizeof(PacketHeader)
                 ),
                 payloadLength
             );
 
-            printf("RX seq=%lu version=%u type=%u: rssi:%ddBm, snr:%.1fdB %s\n",
+            printf(
+                "RX session=%lu seq=%lu version=%u type=%u: "
+                "rssi:%ddBm, snr:%.1fdB %s\n",
+                static_cast<unsigned long>(header.sessionId),
                 static_cast<unsigned long>(header.sequence),
                 static_cast<unsigned>(header.version),
                 static_cast<unsigned>(header.type),
-                rssi, snr,
+                rssi,
+                snr,
                 payload.c_str()
             );
         }
