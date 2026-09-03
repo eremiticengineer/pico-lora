@@ -55,6 +55,7 @@ add_library(${LIBRARY}
 
 target_include_directories(${LIBRARY} PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/src
+    ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
 target_link_libraries(${LIBRARY} PUBLIC
