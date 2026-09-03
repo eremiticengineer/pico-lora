@@ -8,6 +8,8 @@ set(PROJECT_RECEIVER pico_lora_test_receiver)
 # Select board before importing the Pico SDK
 # ---------------------------------------------------------
 if(DEVICE STREQUAL "seeed_xiao_rp2040")
+    set(PICO_BOARD seeed_xiao_rp2040 CACHE STRING "Board type" FORCE)
+elseif(DEVICE STREQUAL "pico")
     set(PICO_BOARD pico CACHE STRING "Board type" FORCE)
 elseif(DEVICE STREQUAL "pico2")
     set(PICO_BOARD pico2 CACHE STRING "Board type" FORCE)
