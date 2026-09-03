@@ -119,7 +119,8 @@ void lora_receive_weather_data_task(void* params) {
     std::vector<uint8_t> packet;
 
     uint32_t expectedSequence = 0;
-    bool firstPacket = true;
+    uint32_t currentSessionId = 0;
+    bool haveSession = false;
 
     LoRaStats stats;
 
@@ -129,7 +130,7 @@ void lora_receive_weather_data_task(void* params) {
              * Read these immediately after receiving
              * the packet. They refer to the most
              * recently received LoRa packet.
-             */            
+             */
             const int16_t rssi = pLora->getPacketRssi();
             const float snr = pLora->getPacketSnr();
 
@@ -141,27 +142,47 @@ void lora_receive_weather_data_task(void* params) {
 
             PacketHeader header;
 
-            std::memcpy(&header, packet.data(), sizeof(PacketHeader));
+            std::memcpy(
+                &header,
+                packet.data(),
+                sizeof(PacketHeader)
+            );
 
             const uint32_t sequence = header.sequence;
 
             /*
-             * Sequence tracking.
+             * Session and sequence tracking.
              */
-            if (firstPacket) {
+            if (!haveSession || header.sessionId != currentSessionId) {
+                currentSessionId = header.sessionId;
                 expectedSequence = sequence + 1;
-                firstPacket = false;
+                haveSession = true;
+
+                printf(
+                    "New sender session: %lu\n",
+                    static_cast<unsigned long>(currentSessionId)
+                );
             }
             else if (sequence == expectedSequence) {
                 expectedSequence++;
             }
             else if (sequence > expectedSequence) {
                 uint32_t lost = sequence - expectedSequence;
-                printf("Lost %lu packet(s)\n", static_cast<unsigned long>(lost));
+
+                printf(
+                    "Lost %lu packet(s)\n",
+                    static_cast<unsigned long>(lost)
+                );
+
+                stats.addLostPackets(lost);
+
                 expectedSequence = sequence + 1;
             }
             else {
-                printf("Old/duplicate packet: %lu\n", static_cast<unsigned long>(sequence));
+                printf(
+                    "Old/duplicate packet: %lu\n",
+                    static_cast<unsigned long>(sequence)
+                );
             }
 
             /*
@@ -172,24 +193,29 @@ void lora_receive_weather_data_task(void* params) {
 
             switch (header.type) {
                 case PacketType::Weather: {
-                    const size_t expectedSize = sizeof(PacketHeader) + sizeof(WeatherPayload);
+                    const size_t expectedSize =
+                        sizeof(PacketHeader) + sizeof(WeatherPayload);
 
                     if (packet.size() != expectedSize) {
-                        printf("Invalid weather packet size: %u\n", static_cast<unsigned>
-                            (
-                                packet.size()
-                            )
+                        printf(
+                            "Invalid weather packet size: %u\n",
+                            static_cast<unsigned>(packet.size())
                         );
+
                         break;
                     }
 
                     WeatherPayload weather;
 
-                    std::memcpy(&weather, packet.data() + sizeof(PacketHeader),
-                        sizeof(WeatherPayload));
+                    std::memcpy(
+                        &weather,
+                        packet.data() + sizeof(PacketHeader),
+                        sizeof(WeatherPayload)
+                    );
 
                     printf(
-                        "RX seq=%lu "
+                        "RX session=%lu "
+                        "seq=%lu "
                         "RSSI=%ddBm "
                         "SNR=%.1fdB "
                         "temp=%.1fC "
@@ -203,6 +229,7 @@ void lora_receive_weather_data_task(void* params) {
                         "battery=%.2fV "
                         "timestamp=%lu\n",
 
+                        static_cast<unsigned long>(header.sessionId),
                         static_cast<unsigned long>(header.sequence),
 
                         rssi,
@@ -225,9 +252,12 @@ void lora_receive_weather_data_task(void* params) {
                         static_cast<unsigned long>(weather.timestamp)
                     );
 
-                    printf("direction=%u° (%s)\n", weather.windDirectionDegrees,
-                        windDirectionName(weather.windDirectionDegrees));
-                    
+                    printf(
+                        "direction=%u° (%s)\n",
+                        weather.windDirectionDegrees,
+                        windDirectionName(weather.windDirectionDegrees)
+                    );
+
                     printf(
                         "LINK "
                         "received=%llu "
@@ -239,7 +269,6 @@ void lora_receive_weather_data_task(void* params) {
                         "min=%.1fdB\n",
 
                         static_cast<unsigned long long>(stats.packetsReceived),
-
                         static_cast<unsigned long long>(stats.packetsLost),
 
                         stats.packetLossPercentage(),
@@ -263,7 +292,11 @@ void lora_receive_weather_data_task(void* params) {
                     break;
 
                 default:
-                    printf("Unknown packet type: %u\n", static_cast<unsigned>(header.type));
+                    printf(
+                        "Unknown packet type: %u\n",
+                        static_cast<unsigned>(header.type)
+                    );
+
                     break;
             }
         }
