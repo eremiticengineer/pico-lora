@@ -95,6 +95,10 @@ void lora_send_weather_data_task(void* params) {
         };
 
         WeatherPayload weather {
+            .timestamp = 1788004800,
+
+            .bootId = 1,
+
             .temperature = 12.4f,
             .humidity = 76.2f,
             .pressure = 1008.6f,
@@ -103,13 +107,11 @@ void lora_send_weather_data_task(void* params) {
             .windGust = 14.2f,
             .windDirectionDegrees = 23,
 
-            .rainfall = 1.4f,
-
             .lux = 12500.0f,
 
-            .batteryVoltage = 4.87f,
+            .rainTipsSinceBoot = 10,
 
-            .timestamp = 1788004800
+            .batteryVoltage = 4.87f,
         };
 
         std::vector<uint8_t> packet(sizeof(PacketHeader) + sizeof(WeatherPayload));

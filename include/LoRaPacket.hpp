@@ -17,6 +17,10 @@ struct __attribute__((packed)) PacketHeader {
 };
 
 struct __attribute__((packed)) WeatherPayload {
+    uint32_t timestamp;             // Unix time (UTC)
+
+    uint32_t bootId;                // To detect a weather station reboot affecting rainTipsSinceBoot
+
     float temperature;              // °C
     float humidity;                 // %
     float pressure;                 // hPa
@@ -25,17 +29,15 @@ struct __attribute__((packed)) WeatherPayload {
     float windGust;                 // mph
     uint16_t windDirectionDegrees;  // 0-359°
 
-    float rainfall;                 // mm
-
     float lux;                      // lux
 
-    float batteryVoltage;           // V
+    uint32_t rainTipsSinceBoot;     // mm
 
-    uint32_t timestamp;             // Unix time (UTC)
+    float batteryVoltage;           // V
 };
 
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 38);
+static_assert(sizeof(WeatherPayload) == 42);
 
 inline const char* windDirectionName(uint16_t degrees) {
 
@@ -129,4 +131,4 @@ struct LoRaStats {
 static_assert(sizeof(float) == 4);
 static_assert(std::numeric_limits<float>::is_iec559);
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 38);
+static_assert(sizeof(WeatherPayload) == 42);

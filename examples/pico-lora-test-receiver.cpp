@@ -218,6 +218,8 @@ void lora_receive_weather_data_task(void* params) {
                         "seq=%lu "
                         "RSSI=%ddBm "
                         "SNR=%.1fdB "
+                        "timestamp=%lu\n",
+                        "bootId=%d\n",
                         "temp=%.1fC "
                         "humidity=%.1f%% "
                         "pressure=%.1fhPa "
@@ -226,14 +228,17 @@ void lora_receive_weather_data_task(void* params) {
                         "direction=%u "
                         "rain=%.1fmm "
                         "lux=%.1f "
-                        "battery=%.2fV "
-                        "timestamp=%lu\n",
+                        "battery=%.2fV ",
 
                         static_cast<unsigned long>(header.sessionId),
                         static_cast<unsigned long>(header.sequence),
 
                         rssi,
                         snr,
+
+                        weather.timestamp,
+
+                        weather.bootId,
 
                         weather.temperature,
                         weather.humidity,
@@ -243,13 +248,11 @@ void lora_receive_weather_data_task(void* params) {
                         weather.windGust,
                         weather.windDirectionDegrees,
 
-                        weather.rainfall,
+                        weather.rainTipsSinceBoot,
 
                         weather.lux,
 
-                        weather.batteryVoltage,
-
-                        static_cast<unsigned long>(weather.timestamp)
+                        weather.batteryVoltage
                     );
 
                     printf(
