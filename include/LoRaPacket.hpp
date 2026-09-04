@@ -27,7 +27,8 @@ struct __attribute__((packed)) WeatherPayload {
 
     float windSpeed;                // mph
     float windGust;                 // mph
-    uint16_t windDirectionDegrees;  // 0-359°
+    char windDirectionName[4];      // SW
+    uint16_t windDirectionDegrees;  // 0-359
 
     float lux;                      // lux
 
@@ -37,7 +38,7 @@ struct __attribute__((packed)) WeatherPayload {
 };
 
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 42);
+static_assert(sizeof(WeatherPayload) == 46);
 
 inline const char* windDirectionName(uint16_t degrees) {
 
@@ -131,4 +132,4 @@ struct LoRaStats {
 static_assert(sizeof(float) == 4);
 static_assert(std::numeric_limits<float>::is_iec559);
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 42);
+static_assert(sizeof(WeatherPayload) == 46);
