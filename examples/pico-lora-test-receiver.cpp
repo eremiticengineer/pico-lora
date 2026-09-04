@@ -214,54 +214,6 @@ void lora_receive_weather_data_task(void* params) {
                     );
 
                     printf(
-                        "RX session=%lu "
-                        "seq=%lu "
-                        "RSSI=%ddBm "
-                        "SNR=%.1fdB "
-                        "timestamp=%lu\n",
-                        "bootId=%d\n",
-                        "temp=%.1fC "
-                        "humidity=%.1f%% "
-                        "pressure=%.1fhPa "
-                        "wind=%.1fmph "
-                        "gust=%.1fmph "
-                        "direction=%u "
-                        "rain=%.1fmm "
-                        "lux=%.1f "
-                        "battery=%.2fV ",
-
-                        static_cast<unsigned long>(header.sessionId),
-                        static_cast<unsigned long>(header.sequence),
-
-                        rssi,
-                        snr,
-
-                        weather.timestamp,
-
-                        weather.bootId,
-
-                        weather.temperature,
-                        weather.humidity,
-                        weather.pressure,
-
-                        weather.windSpeed,
-                        weather.windGust,
-                        weather.windDirectionDegrees,
-
-                        weather.rainTipsSinceBoot,
-
-                        weather.lux,
-
-                        weather.batteryVoltage
-                    );
-
-                    printf(
-                        "direction=%u° (%s)\n",
-                        weather.windDirectionDegrees,
-                        windDirectionName(weather.windDirectionDegrees)
-                    );
-
-                    printf(
                         "LINK "
                         "received=%llu "
                         "lost=%llu "
@@ -282,6 +234,40 @@ void lora_receive_weather_data_task(void* params) {
                         stats.averageSnr(),
                         stats.minimumSnr
                     );
+
+                    printf(
+                        "timestamp=%lu "
+                        "bootId=%d "
+                        "temp=%.1fC "
+                        "humidity=%.1f%% "
+                        "pressure=%.1fhPa "
+                        "wind=%.1fmph "
+                        "gust=%.1fmph "
+                        "direction=%u "
+                        "rain=%d "
+                        "lux=%.1f "
+                        "battery=%.2fV\n",
+
+                        weather.timestamp,
+
+                        weather.bootId,
+
+                        weather.temperature,
+                        weather.humidity,
+                        weather.pressure,
+
+                        weather.windSpeed,
+                        weather.windGust,
+                        weather.windDirectionDegrees,
+
+                        weather.rainTipsSinceBoot,
+
+                        weather.lux,
+
+                        weather.batteryVoltage
+                    );
+
+                    printf("\n");
 
                     break;
                 }
