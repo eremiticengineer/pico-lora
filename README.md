@@ -105,16 +105,25 @@ Hold in BOOTSEL on the receiver pico, plug it in and flash it:
 cp build/pico_lora_test_receiver.uf2 /media/pi/RP2350
 ```
 
+and unplug the receiver pico.
+
 ## Synchronising WeatherPayload between sender and receiver
 
-The WeatherPayload struct must be the same for the sender and receiver and its size is guarded by **static_assert**s. To work out the size if you add/remove fields you can check the size of each type:
+The WeatherPayload struct must be the same for the sender and receiver and its size is guarded by **static_assert**s. If they don't match you'll see something similar to:
+
+```
+New sender session: 226890954
+Invalid weather packet size: 56
+```
+
+To work out the size if you add/remove fields you can check the size of each type:
 
 ```
 arm-none-eabi-g++ -dM -E -x c++ /dev/null | grep SIZEOF
 arm-none-eabi-g++ -dM -E -x c++ /dev/null | grep CHAR_BIT
 ```
 
-and unplug the receiver pico.
+and update the **static_assert**s to suit the new packed size.
 
 ## Monitoring the LoRa comms between the two picos
 
