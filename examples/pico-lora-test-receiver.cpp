@@ -303,7 +303,7 @@ int main( void )
     sleep_ms(2000);
 
     SX1278Config config;
-    config.frequencyHz = 433000000;
+    config.frequencyHz = 433920000;
     config.bandwidth = LoRaBandwidth::BW_125_KHZ;
     config.codingRate = LoRaCodingRate::CR_4_5;
     config.spreadingFactor = 7;
