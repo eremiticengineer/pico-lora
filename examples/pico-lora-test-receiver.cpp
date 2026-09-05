@@ -254,8 +254,8 @@ void lora_receive_weather_data_task(void* params) {
                         weather.bootId,
 
                         weather.temperature,
-                        weather.humidity,
                         weather.pressure,
+                        weather.humidity,
 
                         weather.windSpeed,
                         weather.windGust,
