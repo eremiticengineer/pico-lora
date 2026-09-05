@@ -239,10 +239,11 @@ void lora_receive_weather_data_task(void* params) {
                         "timestamp=%lu "
                         "bootId=%d "
                         "temp=%.1fC "
-                        "humidity=%.1f%% "
                         "pressure=%.1fhPa "
+                        "humidity=%.1f%% "
                         "wind=%.1fmph "
                         "gust=%.1fmph "
+                        "name=%s "
                         "direction=%u "
                         "rain=%d "
                         "lux=%.1f "
@@ -258,6 +259,7 @@ void lora_receive_weather_data_task(void* params) {
 
                         weather.windSpeed,
                         weather.windGust,
+                        weather.windDirectionName,
                         weather.windDirectionDegrees,
 
                         weather.rainTipsSinceBoot,
