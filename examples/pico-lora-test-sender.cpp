@@ -149,7 +149,10 @@ int main( void )
     config.crcEnabled = true;
     config.preambleLength = 8;
     config.syncWord = 0x12;
-    config.txPowerDbm = 17;
+    // mW = 10^(txPowerDbm / 10) = 10mW
+    // dBm = 10log10(mw)
+    // +3dB ~ doubles the power, +10dB multiplies power by 10
+    config.txPowerDbm = 10;
 
     SX1278 lora(
         lora_config::SPI,
