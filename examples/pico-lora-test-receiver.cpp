@@ -247,7 +247,8 @@ void lora_receive_weather_data_task(void* params) {
                         "direction=%u "
                         "rain=%d "
                         "lux=%.1f "
-                        "battery=%.2fV\n",
+                        "battery=%.2fV "
+                        "sensors=%u\n",
 
                         weather.timestamp,
 
@@ -266,7 +267,9 @@ void lora_receive_weather_data_task(void* params) {
 
                         weather.lux,
 
-                        weather.batteryVoltage
+                        weather.batteryVoltage,
+
+                        weather.validSensors
                     );
 
                     printf("\n");
