@@ -237,7 +237,7 @@ void lora_receive_weather_data_task(void* params) {
 
                     printf(
                         "timestamp=%lu "
-                        "bootId=%d "
+                        "bootId=%u "
                         "temp=%.1fC "
                         "pressure=%.1fhPa "
                         "humidity=%.1f%% "
