@@ -16,6 +16,12 @@ struct __attribute__((packed)) PacketHeader {
     PacketType type;
 };
 
+constexpr uint8_t SENSOR_VALID_BME280         = 1u << 0;
+constexpr uint8_t SENSOR_VALID_VEML7700       = 1u << 1;
+constexpr uint8_t SENSOR_VALID_WIND_DIRECTION = 1u << 2;
+constexpr uint8_t SENSOR_VALID_WIND_SPEED     = 1u << 3;
+constexpr uint8_t SENSOR_VALID_DS3231         = 1u << 4;
+
 struct __attribute__((packed)) WeatherPayload {
     uint32_t timestamp;             // Unix time (UTC)
 
@@ -35,10 +41,12 @@ struct __attribute__((packed)) WeatherPayload {
     uint32_t rainTipsSinceBoot;     // mm
 
     float batteryVoltage;           // V
+
+    uint8_t validSensors;
 };
 
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 46);
+static_assert(sizeof(WeatherPayload) == 47);
 
 inline const char* windDirectionName(uint16_t degrees) {
 
@@ -132,4 +140,4 @@ struct LoRaStats {
 static_assert(sizeof(float) == 4);
 static_assert(std::numeric_limits<float>::is_iec559);
 static_assert(sizeof(PacketHeader) == 10);
-static_assert(sizeof(WeatherPayload) == 46);
+static_assert(sizeof(WeatherPayload) == 47);
