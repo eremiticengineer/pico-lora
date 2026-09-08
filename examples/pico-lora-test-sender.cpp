@@ -33,6 +33,15 @@ namespace lora_config {
     inline constexpr uint CS    = 17;
     inline constexpr uint RESET = 20;
 }
+#elif defined(DEVICE_pico2_w)
+namespace lora_config {
+    inline spi_inst_t* SPI = spi0;
+    inline constexpr uint SCK   = 18;
+    inline constexpr uint MOSI  = 19;
+    inline constexpr uint MISO  = 16;
+    inline constexpr uint CS    = 17;
+    inline constexpr uint RESET = 20;
+}
 #else
 #error "No supported DEVICE defined"
 #endif

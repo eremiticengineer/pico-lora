@@ -25,9 +25,11 @@ if(PICO_LORA_STANDALONE)
         set(PICO_BOARD pico CACHE STRING "Board type" FORCE)
     elseif(DEVICE STREQUAL "pico2")
         set(PICO_BOARD pico2 CACHE STRING "Board type" FORCE)
+    elseif(DEVICE STREQUAL "pico2_w")
+        set(PICO_BOARD pico2_w CACHE STRING "Board type" FORCE)
     else()
         message(FATAL_ERROR
-            "Unknown DEVICE='${DEVICE}'. Use pico, pico2 or seeed_xiao_rp2040."
+            "Unknown DEVICE='${DEVICE}'. Use pico, pico2, pico2_w or seeed_xiao_rp2040."
         )
     endif()
 

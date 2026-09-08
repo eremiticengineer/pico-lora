@@ -3,13 +3,14 @@
 DEVICE="$1"
 
 case "$DEVICE" in
-    pico|pico2|seeed_xiao_rp2040)
+    pico|pico2|pico2_w|seeed_xiao_rp2040)
         ;;
     "")
         echo "No device specified."
         echo "Supported devices:"
         echo "  pico"
         echo "  pico2"
+        echo "  pico2_w"
         echo "  seeed_xiao_rp2040"
         exit 1
         ;;
@@ -18,6 +19,7 @@ case "$DEVICE" in
         echo "Supported devices:"
         echo "  pico"
         echo "  pico2"
+        echo "  pico2_w"
         echo "  seeed_xiao_rp2040"
         exit 1
         ;;

@@ -1,6 +1,7 @@
 # Build output
 build/
 build-pico2/
+build-pico2_w/
 build-seeed_xiao_rp2040/
 cmake-build-*/
 
